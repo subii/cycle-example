@@ -5,13 +5,14 @@ import Record from './record/Record';
 function intent(DOM) {
 
     return {
-        click$: DOM.select('a').events('click')
+        query$: DOM.select('a.query').events('click'),
+        clear$: DOM.select('a.clear').events('click')
     };
 }
 
 function model(actions, DOM) {
 
-    const addRecord$ = actions.click$.flatMapLatest( () => Observable.interval(1000).take(20)
+    const addRecords$ = actions.query$.flatMapLatest( () => Observable.interval(1000).take(20)
         .map(i => function (oldList) {
             const record = Record(DOM, {
                 count: `${i}`,
@@ -20,8 +21,15 @@ function model(actions, DOM) {
             return oldList.concat([{DOM: record.DOM}]);
         }));
 
+    const clearRecords$ = actions.clear$
+        .map(id => function (oldList) {
+            return oldList.filter(list => false);
+        });
+
+    const mod$ = Observable.merge(addRecords$, clearRecords$);
+
     return Observable.just([])
-          .merge(addRecord$)
+          .merge(mod$)
           .scan((acc, mod) => mod(acc));
 
 }
@@ -32,7 +40,8 @@ function view(state$) {
 
     return stateAggr$.map(record =>
         div('.wrapper', [
-            a({ href: '#', id: 'link'}, 'Query'),
+            a({ href: '#', className: 'query'}, 'Query'),
+            a({ href: '#', className: 'clear'}, 'Clear'),
             table('.tableclass', [
               thead(tr([
                   th('COUNT'),
