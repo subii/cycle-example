@@ -12,21 +12,29 @@ function intent(DOM) {
 
 function model(actions, DOM) {
 
-    const addRecords$ = actions.query$.flatMapLatest( () => Observable.interval(1000).take(20)
+    //Clear existing records of current Query
+    const clearRecords$ = actions.clear$
+        .map(id => function (oldList) {
+            return oldList.filter(() => false);
+        });
+
+    //Cleanup records of the previous Query
+    const cleanupRecords$ = actions.query$
+            .map(id => function (oldList) {
+                return oldList.filter(() => false);
+            });
+
+    const fetch$ = Observable.interval(1000).take(20)
         .map(i => function (oldList) {
             const record = Record(DOM, {
                 count: `${i}`,
                 text: `Increasing counter ${i}`
             });
             return oldList.concat([{DOM: record.DOM}]);
-        }));
-
-    const clearRecords$ = actions.clear$
-        .map(id => function (oldList) {
-            return oldList.filter(list => false);
         });
+    const addRecords$ = actions.query$.flatMapLatest( () => fetch$);
 
-    const mod$ = Observable.merge(addRecords$, clearRecords$);
+    const mod$ = Observable.merge(cleanupRecords$, addRecords$, clearRecords$);
 
     return Observable.just([])
           .merge(mod$)
