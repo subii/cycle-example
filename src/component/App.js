@@ -1,12 +1,12 @@
 import { Observable } from 'rx';
-import { h1, div, a, table, thead, tbody, tr, td, th } from '@cycle/dom';
+import { h1, div, button, table, thead, tbody, tr, td, th } from '@cycle/dom';
 import Record from './record/Record';
 
 function intent(DOM) {
 
     return {
-        query$: DOM.select('a.query').events('click'),
-        clear$: DOM.select('a.clear').events('click')
+        query$: DOM.select('button.query').events('click'),
+        clear$: DOM.select('button.clear').events('click')
     };
 }
 
@@ -23,8 +23,17 @@ function model(actions, DOM) {
             .map(id => function (oldList) {
                 return oldList.filter(() => false);
             });
+    const source = Observable.interval(1000).take(20);
+    const header$ = source.first()
+        .map(i => function (oldList) {
+            const record = Record(DOM, {
+                count: `COUNT ${i}`,
+                text: `TEXT ${i}`
+            }, true);
+            return oldList.concat([{DOM: record.DOM}]);
+        });
 
-    const fetch$ = Observable.interval(1000).take(20)
+    const rows$ = source.skip(1)
         .map(i => function (oldList) {
             const record = Record(DOM, {
                 count: `${i}`,
@@ -32,7 +41,8 @@ function model(actions, DOM) {
             });
             return oldList.concat([{DOM: record.DOM}]);
         });
-    const addRecords$ = actions.query$.flatMapLatest( () => fetch$);
+
+    const addRecords$ = actions.query$.flatMapLatest( () => Observable.merge(header$, rows$));
 
     const mod$ = Observable.merge(cleanupRecords$, addRecords$, clearRecords$);
 
@@ -48,14 +58,10 @@ function view(state$) {
 
     return stateAggr$.map(record =>
         div('.wrapper', [
-            a({ href: '#', className: 'query'}, 'Query'),
-            a({ href: '#', className: 'clear'}, 'Clear'),
+            button('.query', 'Query'),
+            button('.clear', 'Clear'),
             table('.tableclass', [
-              thead(tr([
-                  th('COUNT'),
-                  th('TEXT')
-              ])),
-              tbody('.tbodyclass', record)
+              record
             ])
         ])
     );
