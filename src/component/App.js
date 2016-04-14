@@ -23,7 +23,7 @@ function model(actions, DOM) {
             .map(id => function (oldList) {
                 return oldList.filter(() => false);
             });
-    const source = Observable.interval(1000).take(20);
+    const source = Observable.interval(50).take(20);
     const header$ = source.first()
         .map(i => function (oldList) {
             const record = Record(DOM, {
