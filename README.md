@@ -8,5 +8,4 @@ To run the dev server,
     > npm start
 
     Access the webpack dev server at http://localhost:8080/webpack-dev-server/
-
 ```
